@@ -1,39 +1,34 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-
+    <!-- Parent coordinates -->
     <groupId>com.rohit.pg</groupId>
     <artifactId>pg-poc</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>PG Learning POC</name>
-    <description>Payment Gateway Learning POC with SOA</description>
     <packaging>pom</packaging>
 
+    <name>PG Learning POC</name>
+    <description>Payment Gateway Learning POC with SOA</description>
+
+    <!-- Java version -->
     <properties>
         <java.version>24</java.version>
     </properties>
 
+    <!-- All child modules -->
     <modules>
         <module>commons</module>
-        <!--<module>payment-engine</module>
+        <module>paymentengine</module>
         <module>simulator</module>
-        <module>merchant-app</module>
-        <module>reports</module>-->
+        <!-- <module>reports</module> -->
     </modules>
 
-    <!-- Dependency management for consistent versions -->
+    <!-- Centralized dependency versions -->
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot BOM -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -41,7 +36,37 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Internal module versions -->
+            <dependency>
+                <groupId>com.rohit.pg</groupId>
+                <artifactId>commons</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
+    <!-- Centralized plugin management -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Spring Boot plugin -->
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+
+                <!-- Compiler plugin -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.11.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

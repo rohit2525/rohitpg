@@ -5,10 +5,8 @@ import lombok.Data;
 
 @Data
 public class PaymentRequest {
-    @NotNull
-    private String merchantId;
-    @NotNull
-    private Double amount;
-    private String mode;
-    private String callbackUrl;
+  @NotNull private String merchantId;
+  @NotNull private Double amount;
+  private String mode;
+  private String callbackUrl;
 }
