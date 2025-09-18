@@ -27,7 +27,7 @@ public class TokenValidator {
   }
 
   public void storeAuth(String token, String clientId) {
-    sessionCache.put(token, new TokenInfo(TokenType.AUTH, clientId));
+      authTokenCache.put(token, new TokenInfo(TokenType.AUTH, clientId));
   }
 
   public Boolean isValidSession(String token) {
@@ -35,6 +35,6 @@ public class TokenValidator {
   }
 
   public Boolean isValidAuth(String token) {
-    return sessionCache.getIfPresent(token) != null;
+    return authTokenCache.getIfPresent(token) != null;
   }
 }
