@@ -1,9 +1,6 @@
 package com.rohit.pg.simulator.service;
 
-import com.rohit.pg.simulator.dto.CallbackRequest;
-import com.rohit.pg.simulator.dto.CollectRequest;
-import com.rohit.pg.simulator.dto.CollectResponse;
-import com.rohit.pg.simulator.dto.ErrorResponse;
+import com.rohit.pg.simulator.dto.*;
 import com.rohit.pg.simulator.enums.UpiFailureCode;
 import com.rohit.pg.simulator.exception.SimulatorException;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +12,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +31,8 @@ public class CollectService {
   // In-memory store: txnId -> status
   private final Map<String, String> collectStore = new ConcurrentHashMap<>();
   private final RestTemplate restTemplate = new RestTemplate();
+  // Store txnId -> CallbackRequest (only if pending retry)
+  private final Map<String, RetryEntry> retryQueue = new ConcurrentHashMap<>();
 
   @PostMapping("/collect")
   public CollectResponse initiateCollect(
@@ -131,7 +131,42 @@ public class CollectService {
       collectStore.put(collectRequest.getTxnId(), callbackRequest.toString());
     } catch (Exception e) {
       log.error("Callback failed txnId={} will retry later", collectRequest.getTxnId(), e);
-      // TODO: implement retry
+      retryQueue.put(collectRequest.getTxnId(), new RetryEntry(callbackRequest));
     }
+  }
+
+  @Scheduled(fixedRate = 10_000) // check every 10 seconds
+  public void retryFailedCallbacks() {
+    if (retryQueue.isEmpty()) return;
+
+    retryQueue.forEach(
+        (txnId, retryEntry) -> {
+          if (LocalDateTime.now().isBefore(retryEntry.getNextRetryTime())) {
+            return; // not time yet
+          }
+
+          if (retryEntry.getRetryCount() >= 10) {
+            log.error("Max retries reached for txnId={} marking as permanent failure", txnId);
+            retryQueue.remove(txnId);
+            return;
+          }
+
+          try {
+            String callbackUrl = "http://localhost:8080/pg/callback";
+            restTemplate.postForEntity(callbackUrl, retryEntry.getCallbackRequest(), String.class);
+            log.info(
+                "Retry successful for txnId={} after {} attempts",
+                txnId,
+                retryEntry.getRetryCount());
+            retryQueue.remove(txnId);
+          } catch (Exception e) {
+            retryEntry.incrementRetry();
+            log.warn(
+                "Retry {} failed for txnId={}, next retry at {}",
+                retryEntry.getRetryCount(),
+                txnId,
+                retryEntry.getNextRetryTime());
+          }
+        });
   }
 }
